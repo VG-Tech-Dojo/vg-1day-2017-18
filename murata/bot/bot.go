@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/murata/model"
+	"fmt"
 )
 
 type (
@@ -94,6 +95,25 @@ func NewKeywordBot(out chan *model.Message) *Bot {
 
 	return &Bot{
 		name:      "keywordbot",
+		in:        in,
+		out:       out,
+		checker:   checker,
+		processor: processor,
+	}
+}
+
+func NewGachaBot(out chan *model.Message) *Bot {
+
+	fmt.Println("NewGachaBot called")
+
+	in := make(chan *model.Message)
+	
+	checker := NewRegexpChecker("\\Agacha\\z")
+
+	processor := &GachaProcessor{}
+
+	return &Bot{
+		name:      "gachabot",
 		in:        in,
 		out:       out,
 		checker:   checker,
