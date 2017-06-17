@@ -96,6 +96,20 @@ func (m *Message) Create(c *gin.Context) {
 func (m *Message) UpdateByID(c *gin.Context) {
 	// 1-3. メッセージを編集しよう
 	// ...
+	msg, err := model.MessageByID(m.DB, c.Param("id"))
+
+	if err != nil {
+		return
+	}
+
+	if err := c.BindJSON(&msg); err != nil {
+		resp := httputil.NewErrorResponse(err)
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
+	msg.Update(m.DB)
+
 	c.JSON(http.StatusCreated, gin.H{})
 }
 
@@ -103,5 +117,12 @@ func (m *Message) UpdateByID(c *gin.Context) {
 func (m *Message) DeleteByID(c *gin.Context) {
 	// 1-4. メッセージを削除しよう
 	// ...
+	msg, err := model.MessageByID(m.DB, c.Param("id"))
+	if err != nil {
+		return
+	}
+
+	msg.Delete(m.DB)
+
 	c.JSON(http.StatusOK, gin.H{})
 }
