@@ -51,7 +51,12 @@ func (s *Server) Init(dbconf, env string) error {
 	s.Engine.GET("/murata", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "murata.html", gin.H{})
 	})
+
+	s.Engine.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{})
+	})
 	s.Engine.Static("/assets", "./assets")
+
 
 	// tutorial. 自己紹介を追加する
 	// ...
