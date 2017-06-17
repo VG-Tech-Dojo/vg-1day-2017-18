@@ -28,12 +28,27 @@ type (
 
 	// KeywordProcessor はメッセージ本文からキーワードを抽出するprocessorの構造体です
 	KeywordProcessor struct{}
+
+	GachaProcessor struct{}
 )
 
 // Process は"hello, world!"というbodyがセットされたメッセージのポインタを返します
 func (p *HelloWorldProcessor) Process(msgIn *model.Message) (*model.Message, error) {
 	return &model.Message{
 		Body: msgIn.Body + ", world!",
+	}, nil
+}
+
+func (p *GachaProcessor) Process(msgIN *model.Message) (*model.Message, error) {
+	gacha := []string{
+		"SSレア",
+		"Sレア",
+		"レア",
+		"ノーマル",
+	}
+	result := gacha[randIntn(len(gacha))]
+	return &model.Message{
+		Body: result,
 	}, nil
 }
 
