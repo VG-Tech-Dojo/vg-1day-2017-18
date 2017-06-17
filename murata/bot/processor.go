@@ -8,11 +8,22 @@ import (
 
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/murata/env"
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/murata/model"
+	"net/url"
 )
 
 const (
 	keywordAPIURLFormat = "https://jlp.yahooapis.jp/KeyphraseService/V1/extract?appid=%s&sentence=%s&output=json"
+	talkAPIURLFormat = "https://api.a3rt.recruit-tech.co.jp/talk/v1/smalltalk"
 )
+
+type TalkAPIResponce struct {
+	Status int `json:"status"`
+	Message string `json:"message"`
+	Results []struct {
+		Perplexity float64 `json:"perplexity"`
+		Reply string `json:"reply"`
+	} `json:"results"`
+}
 
 type (
 	// Processor はmessageを受け取り、投稿用messageを作るインターフェースです
@@ -23,13 +34,15 @@ type (
 	// HelloWorldProcessor は"hello, world!"メッセージを作るprocessorの構造体です
 	HelloWorldProcessor struct{}
 
-	GachaProcessor struct {}
-
 	// OmikujiProcessor は"大吉", "吉", "中吉", "小吉", "末吉", "凶"のいずれかをランダムで作るprocessorの構造体です
 	OmikujiProcessor struct{}
 
 	// KeywordProcessor はメッセージ本文からキーワードを抽出するprocessorの構造体です
 	KeywordProcessor struct{}
+
+	GachaProcessor struct {}
+
+	ChatProcessor struct {}
 )
 
 // Process は"hello, world!"というbodyがセットされたメッセージのポインタを返します
@@ -82,8 +95,6 @@ func (p *KeywordProcessor) Process(msgIn *model.Message) (*model.Message, error)
 
 func (p *GachaProcessor) Process(msgIn *model.Message) (*model.Message, error) {
 
-	fmt.Println("GachaProcess called")
-
 	fortunes := []string{
 		"SSレア",
 		"Sレア",
@@ -93,5 +104,27 @@ func (p *GachaProcessor) Process(msgIn *model.Message) (*model.Message, error) {
 	result := fortunes[randIntn(len(fortunes))]
 	return &model.Message{
 		Body: result,
+	}, nil
+}
+
+func (p *ChatProcessor) Process(msgIn *model.Message) (*model.Message, error) {
+
+	r := regexp.MustCompile("\\Atalk (.*)\\z")
+	matchedStrings := r.FindStringSubmatch(msgIn.Body)
+	text := matchedStrings[1]
+
+	var json TalkAPIResponce
+
+	params := url.Values{}
+	params.Set("apikey", env.TalkAPIKey)
+	params.Add("query", text)
+
+	err := post(talkAPIURLFormat, params, &json)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return &model.Message{
+		Body: json.Results[0].Reply,
 	}, nil
 }
