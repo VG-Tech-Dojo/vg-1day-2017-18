@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/murata/httputil"
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/murata/model"
@@ -75,7 +76,6 @@ func (m *Message) Create(c *gin.Context) {
 
 	// 1-2. ユーザー名を追加しよう
 	// できる人は、ユーザー名が空だったら`anonymous`等適当なユーザー名で投稿するようにしてみよう
-
 	inserted, err := msg.Insert(m.DB)
 	if err != nil {
 		resp := httputil.NewErrorResponse(err)
@@ -96,6 +96,36 @@ func (m *Message) Create(c *gin.Context) {
 func (m *Message) UpdateByID(c *gin.Context) {
 	// 1-3. メッセージを編集しよう
 	// ...
+	var msg model.Message
+
+	if c.Request.ContentLength == 0 {
+		resp := httputil.NewErrorResponse(errors.New("body is missing"))
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
+	if err := c.BindJSON(&msg); err != nil {
+		resp := httputil.NewErrorResponse(err)
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	msg.ID, _= strconv.ParseInt(c.Param("id"), 10, 64)
+	updated, err := msg.Update(m.DB)
+
+	if err != nil {
+		resp := httputil.NewErrorResponse(err)
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
+	// bot対応
+	m.Stream <- updated
+
+	c.JSON(http.StatusCreated, gin.H{
+		"result": updated,
+		"error":  nil,
+	})
+
 	c.JSON(http.StatusCreated, gin.H{})
 }
 
