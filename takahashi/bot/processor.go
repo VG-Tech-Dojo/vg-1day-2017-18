@@ -8,7 +8,20 @@ import (
 
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/takahashi/env"
 	"github.com/VG-Tech-Dojo/vg-1day-2017-18/takahashi/model"
+	"net/http"
+	"net/url"
+	"io/ioutil"
+	"encoding/json"
 )
+
+type Output struct {
+	Status       int    `json:"status"`
+	Message     string `json:"message"`
+	Results []struct {
+		Perplexity float64 `json:"perplexity"`
+		Reply string `json:"reply"`
+	} `json:"results"`
+}
 
 const (
 	keywordAPIURLFormat = "https://jlp.yahooapis.jp/KeyphraseService/V1/extract?appid=%s&sentence=%s&output=json"
@@ -30,6 +43,8 @@ type (
 	KeywordProcessor struct{}
 
 	GachaProcessor struct{}
+
+	TalkProcessor struct{}
 )
 
 // Process は"hello, world!"というbodyがセットされたメッセージのポインタを返します
@@ -65,6 +80,34 @@ func (p *OmikujiProcessor) Process(msgIn *model.Message) (*model.Message, error)
 	result := fortunes[randIntn(len(fortunes))]
 	return &model.Message{
 		Body: result,
+	}, nil
+}
+
+func (p *TalkProcessor) Process(msgIn *model.Message) (*model.Message, error) {
+	r := regexp.MustCompile("\\Atalk (.*)\\z")
+	matchedStrings := r.FindStringSubmatch(msgIn.Body)
+	text := matchedStrings[1]
+
+	client := &http.Client{}
+	data := url.Values{"apikey":{"dPMQ92gZvtCYbvmk2kirZi9BzUCkAA5c"},"query":{text}}
+
+	res, _ := client.Post(
+		"https://api.a3rt.recruit-tech.co.jp/talk/v1/smalltalk",
+		"application/x-www-form-urlencoded",
+		strings.NewReader(data.Encode()),
+	)
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	output := Output{}
+	err = json.Unmarshal(body, &output)
+
+	return &model.Message{
+		Body: output.Results[0].Reply,
 	}, nil
 }
 
